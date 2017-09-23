@@ -80,9 +80,12 @@ class Blockchain(object):
         if self._is_valid_txn(txn):
             block = self._make_block(txn)
             self.chain.append(block)
-            return block
+            return json.dumps(block)
         else:
             raise InvalidTransaction
 
     def recv_block(self, block):
-        self.chain.append(block)
+        deserialized = json.loads(block)
+        self.chain.append(deserialized)
+        return deserialized
+        

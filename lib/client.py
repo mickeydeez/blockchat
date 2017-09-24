@@ -51,9 +51,12 @@ class Client(object):
                         sys.stdout.write(display)
                     self.prompt()
              
-                else :
+                else:
                     msg = sys.stdin.readline()
-                    block = self.blockchain.send_block(msg)
-                    payload = base64.b64encode(block.encode('utf-8'))
-                    self.s.send(payload)
-                    self.prompt()
+                    if "?chain" in msg:
+                        print(self.blockchain.chain)
+                    else:
+                        block = self.blockchain.send_block(msg)
+                        payload = base64.b64encode(block.encode('utf-8'))
+                        self.s.send(payload)
+                        self.prompt()

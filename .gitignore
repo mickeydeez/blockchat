@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *venv*
+*blockchain.json*
 
 # C extensions
 *.so

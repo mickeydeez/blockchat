@@ -4,6 +4,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.boxlayout import BoxLayout
 from lib.blockchain import Blockchain
 from threading import Thread
+from pprint import pprint
 import socket
 import select
 import string
@@ -53,7 +54,10 @@ class ClientApp(App):
         msg = self.textbox.text
         if msg:
             if "?chain" in msg:
-                self.label.text += "{}\n".format(self.blockchain.chain)
+                self.label.text += "Dumping chain to ./blockchain.json\n"
+                with open('blockchain.json', 'wt') as out:
+                    pprint(self.blockchain.chain, stream=out)
+                self.textbox.text = ""
             else:
                 block = self.blockchain.send_block(msg)
                 payload = base64.b64encode(block.encode('utf-8'))

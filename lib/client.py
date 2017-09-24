@@ -32,18 +32,24 @@ class Client(object):
          
             for sock in read_sockets:
                 if sock == self.s:
-                    data = sock.recv(4096)
+                    data = sock.recv(4096).decode('utf-8')
                     if not data:
                         print('\nDisconnected from chat server')
                         sys.exit()
+                    elif "entered room" in data:
+                        sys.stdout.write(data)
                     else:
-                        try:
-                            decoded = base64.b64decode(data)
-                            block = self.blockchain.recv_block(decoded)
-                        except binascii.Error:
-                            block = data.decode('utf-8')
-                        sys.stdout.write(block)
-                        self.prompt()
+                        split = data.split('>')
+                        ldata = "%s>" % split[0]
+                        rdata = ''.join(split[1:]).encode('utf-8')
+                        decoded = base64.b64decode(rdata)
+                        block = self.blockchain.recv_block(decoded)
+                        txn = block['contents']['txns']
+                        lident = txn.keys()[0]
+                        rident = txn.values()[0]
+                        display = "\r<%s> %s" % (lident, rident)
+                        sys.stdout.write(display)
+                    self.prompt()
              
                 else :
                     msg = sys.stdin.readline()

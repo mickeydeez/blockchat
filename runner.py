@@ -3,7 +3,7 @@
 # runner.py
 
 from lib.server import ChatServer
-from lib.client import Client
+#from lib.client import Client
 from argparse import ArgumentParser
 import sys
 
@@ -12,17 +12,12 @@ def run():
     if args.listener:
         conn = ChatServer()
     else:
-        conn = Client(args.name)
+        from lib.kclient import ClientApp
+        #conn = Client(args.name)
+        conn = ClientApp(alias=sys.argv[1]).run()
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument(
-        '-n',
-        '--name',
-        action='store',
-        dest='name',
-        help='Alias to use for this client'
-    )
     parser.add_argument(
         '-l',
         '--listen',
@@ -31,10 +26,7 @@ def parse_args():
         dest='listener',
         help="Specify to make this client the listener"
     )
-    args = parser.parse_args()
-    if not args.listener and not args.name:
-        parser.print_help()
-        sys.exit(1)
+    args, unknown = parser.parse_known_args()
     return args
 
 if __name__ == '__main__':

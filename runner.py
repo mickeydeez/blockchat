@@ -2,6 +2,7 @@
 
 # runner.py
 
+from lib.server import ChatServer
 from lib.client import Client
 from argparse import ArgumentParser
 import sys
@@ -9,11 +10,9 @@ import sys
 def run():
     args = parse_args()
     if args.listener:
-        conn = Client(args.name)
-        conn.run()
+        conn = ChatServer()
     else:
-        conn = Client(args.name, listener=False)
-        conn.run()
+        conn = Client(args.name)
 
 def parse_args():
     parser = ArgumentParser()
@@ -33,7 +32,7 @@ def parse_args():
         help="Specify to make this client the listener"
     )
     args = parser.parse_args()
-    if not args.name:
+    if not args.listener and not args.name:
         parser.print_help()
         sys.exit(1)
     return args

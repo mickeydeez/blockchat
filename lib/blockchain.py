@@ -85,7 +85,12 @@ class Blockchain(object):
             raise InvalidTransaction
 
     def recv_block(self, block):
-        deserialized = json.loads(block)
-        self.chain.append(deserialized)
-        return deserialized
+        try:
+            deserialized = json.loads(block)
+            self.chain.append(deserialized)
+            return deserialized
+        except ValueError as e:
+            print(e)
+            print(block)
+            return block
         

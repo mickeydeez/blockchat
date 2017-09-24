@@ -2,65 +2,52 @@
 
 # lib/client.py
 
+import socket, select, string, sys, base64
 from lib.blockchain import Blockchain
-import socket
-import threading
-import sys
+import binascii
+ 
+class Client(object):
 
-class Client():
-    
-    def __init__(self, name, listener=True):
-        host = socket.gethostname()
-        port = 9998
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.listener = listener
-        if listener:
-            self.s.bind((host, port))
-            self.s.listen(5)
-        else:
-            self.s.connect((host, port))
-        self.clients = []
+    def __init__(self, name, host='127.0.0.1', port=5000):
+        self.name = name
         self.blockchain = Blockchain(name)
-
-    def run(self):
-        if self.listener:
-            client_socket, addr = self.s.accept()
-            self.clients.append(client_socket)
-        else:
-            self.clients.append(self.s)
-        send_thread = threading.Thread(
-            name = 'send_thread',
-            target = self.send_thread
-        )
-        recv_thread = threading.Thread(
-            name = 'recv_thread',
-            target = self.recv_thread
-        )
-        send_thread.start()
-        recv_thread.start()
-                
-    def send_thread(self):
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            while True:
-                msg = input("%s> " % self.blockchain.id)
-                if msg == "?chain":
-                    print(self.blockchain.chain)
-                else:
+            self.s.connect((host, port))
+        except:
+            print("Unable to connect")
+            sys.exit()
+        print("Connected to the remote host")
+        self.prompt()
+        self.manage_responses()
+
+    def prompt(self):
+        sys.stdout.write('<%s> ' % self.name)
+        sys.stdout.flush()
+ 
+    def manage_responses(self):
+        while True:
+            socket_list = [sys.stdin, self.s]
+            read_sockets, write_sockets, error_sockets = select.select(socket_list , [], [])
+         
+            for sock in read_sockets:
+                if sock == self.s:
+                    data = sock.recv(4096)
+                    if not data:
+                        print('\nDisconnected from chat server')
+                        sys.exit()
+                    else:
+                        try:
+                            decoded = base64.b64decode(data)
+                            block = self.blockchain.recv_block(decoded)
+                        except binascii.Error:
+                            block = data.decode('utf-8')
+                        sys.stdout.write(block)
+                        self.prompt()
+             
+                else :
+                    msg = sys.stdin.readline()
                     block = self.blockchain.send_block(msg)
-                    for client in self.clients:
-                        client.sendall(block.encode('utf-8'))
-        except KeyboardInterrupt:
-            sys.exit(1)
-
-    def recv_thread(self):
-        try:
-            while True:
-                if self.listener:
-                    msg = self.clients[0].recv(1024)
-                else:
-                    msg = self.s.recv(1024)
-                if msg:
-                    block = self.blockchain.recv_block(msg.decode('utf-8'))
-                    print(block['contents']['txns'])
-        except KeyboardInterrupt:
-            sys.exit(1)
+                    payload = base64.b64encode(block.encode('utf-8'))
+                    self.s.send(payload)
+                    self.prompt()

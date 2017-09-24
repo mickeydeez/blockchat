@@ -1,7 +1,12 @@
 from kivy.app import App
+from kivy.config import Config
+from kivy.lang import Builder
+from kivy.properties import StringProperty
+from kivy.core.window import Window
 from kivy.uix.label import Label
+from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
-from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
 from lib.blockchain import Blockchain
 from threading import Thread
 from pprint import pprint
@@ -11,6 +16,18 @@ import string
 import sys
 import base64
 import binascii
+
+Builder.load_string("""
+<ScrollableLabel>:
+    Label:
+        size_hint_y: None
+        height: self.texture_size[1]
+        text_size: self.width, None
+        text: root.text
+""")
+
+class ScrollableLabel(ScrollView):
+    text = StringProperty('')
 
 class ClientApp(App):
 
@@ -30,10 +47,14 @@ class ClientApp(App):
         return root
 
     def setup_gui(self):
+        Config.set('graphics', 'width', '200')
+        Config.set('graphics', 'height', '200')
+        Window.size = (500, 300)
+        layout = GridLayout(cols=1)
+        layout.bind(minimum_height=layout.setter('height'))
         self.textbox = TextInput(size_hint_y=.1, multiline=False)
         self.textbox.bind(on_text_validate=self.send_message)
-        self.label = Label(text='connecting...\n')
-        layout = BoxLayout(orientation='vertical')
+        self.label = ScrollableLabel(text='connecting...')
         layout.add_widget(self.label)
         layout.add_widget(self.textbox)
         return layout
@@ -44,11 +65,7 @@ class ClientApp(App):
             self.label.text = "Connected to %s:%s\n" % (self.server, self.port)
             listener = Thread(target=self.receive_messages).start()
         except Exception as e:
-            self.label.text = "Failed to connect to %s:%s\n%s" % (self.server, self.port, e)
-
-    def on_connection(self, connection):
-        self.print_message("Connected successfully!")
-        self.connection = connection
+            self.label.text = "Failed to connect to %s:%s\n%s\n" % (self.server, self.port, e)
 
     def send_message(self, *args):
         msg = self.textbox.text
@@ -61,10 +78,12 @@ class ClientApp(App):
             else:
                 block = self.blockchain.send_block(msg)
                 payload = base64.b64encode(block.encode('utf-8'))
-                self.s.send(payload)
-                self.label.text += "<{}> {}\n".format(self.alias, msg)
+                try:
+                    self.s.send(payload)
+                    self.label.text += "<{}> {}\n".format(self.alias, msg)
+                except BrokenPipeError:
+                    self.label.text += "You aren't connected!\n"
                 self.textbox.text = ""
-                self.textbox.focus = True
 
     def receive_messages(self):
         while True:
@@ -88,3 +107,4 @@ class ClientApp(App):
                         rident = list(txn.values())[0]
                         display = "<%s> %s" % (lident, rident)
                         self.label.text += "{}".format(display)
+                        self.label.scroll_to(display)

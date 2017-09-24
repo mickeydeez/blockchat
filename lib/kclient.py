@@ -6,7 +6,7 @@ from kivy.core.window import Window
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
-from kivy.uix.gridlayout import GridLayout
+from kivy.uix.boxlayout import BoxLayout
 from lib.blockchain import Blockchain
 from threading import Thread
 from pprint import pprint
@@ -50,7 +50,7 @@ class ClientApp(App):
         Config.set('graphics', 'width', '200')
         Config.set('graphics', 'height', '200')
         Window.size = (500, 300)
-        layout = GridLayout(cols=1)
+        layout = BoxLayout(orientation='vertical')
         layout.bind(minimum_height=layout.setter('height'))
         self.textbox = TextInput(size_hint_y=.1, multiline=False)
         self.textbox.bind(on_text_validate=self.send_message)
